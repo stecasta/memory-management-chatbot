@@ -24,12 +24,6 @@ ChatLogic::~ChatLogic()
 {
     // delete chatbot instance
     delete _chatBot;
-
-    // delete all edges
-    for (auto it = std::begin(_edges); it != std::end(_edges); ++it)
-    {
-        delete *it;
-    }
 }
 
 template <typename T>
@@ -140,17 +134,18 @@ void ChatLogic::LoadAnswerGraphFromFile(std::string filename)
                                                           { return node->GetID() == std::stoi(childToken->second); });
 
                             // create new edge
-                            GraphEdge *edge = new GraphEdge(id);
+                            auto edge = std::make_unique<GraphEdge>(id);
                             edge->SetChildNode(childNode->get());
                             edge->SetParentNode(parentNode->get());
-                            _edges.push_back(edge);
+                            //_edges.push_back(edge);
+                            // TODO: check if we actually need a list of edges here
 
                             // find all keywords for current node
                             AddAllTokensToElement("KEYWORD", tokens, *edge);
 
-                            // store reference in child node and parent node
-                            (*childNode)->AddEdgeToParentNode(edge);
-                            (*parentNode)->AddEdgeToChildNode(edge);
+                            // store reference in parent node and move ownership to child node
+                            (*childNode)->AddEdgeToParentNode(edge.get());
+                            (*parentNode)->AddEdgeToChildNode(std::move(edge));
                         }
                     }
                 }
